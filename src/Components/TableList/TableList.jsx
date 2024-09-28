@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { faker } from '@faker-js/faker';
+import { CSVLink } from "react-csv";
 
-const regions = ['Poland', 'USA', 'Georgia',"Bangladesh"];
+const regions = ['Poland', 'USA', 'Georgia', 'Bangladesh'];
 
 function TableList() {
   const [region, setRegion] = useState('USA');
@@ -9,19 +10,24 @@ function TableList() {
   const [seed, setSeed] = useState('');
   const [records, setRecords] = useState([]);
   const [page, setPage] = useState(1);
-
+  
+  const generateSeed = (baseSeed, pageNumber) => {
+    return parseInt(baseSeed) + pageNumber;
+  };
+  
   const generateData = useCallback(() => {
-    faker.seed(seed ? parseInt(seed) : Math.floor(Math.random() * 10000));
+    const combinedSeed = generateSeed(seed || Math.floor(Math.random() * 10000), page);
+    faker.seed(combinedSeed);
     let newRecords = [];
-    for (let i = 0; i < 20; i++) {
+    for (let i = 0; i < 10; i++) {
       newRecords.push(generateRecord(i + 1));
     }
     setRecords(newRecords);
-  }, [region, errorRate, seed]);
+  }, [region, errorRate, seed, page]);
 
   useEffect(() => {
     generateData();
-  }, [region, errorRate, seed, generateData]);
+  }, [region, errorRate, seed, generateData, page]);
 
   const handleScroll = (e) => {
     if (window.innerHeight + document.documentElement.scrollTop === document.documentElement.offsetHeight) {
@@ -30,11 +36,7 @@ function TableList() {
   };
 
   const addMoreRecords = () => {
-    let moreRecords = [];
-    for (let i = 0; i < 10; i++) {
-      moreRecords.push(generateRecord(records.length + i + 1));
-    }
-    setRecords((prevRecords) => [...prevRecords, ...moreRecords]);
+    setPage((prevPage) => prevPage + 1);
   };
 
   const generateRecord = (index) => {
@@ -59,65 +61,80 @@ function TableList() {
   };
 
   const corruptData = (data) => {
-    const index = Math.floor(Math.random() * data.length);
-    return data.slice(0, index) + String.fromCharCode(97 + Math.floor(Math.random() * 26)) + data.slice(index + 1);
+    const randomIndex = Math.floor(Math.random() * data.length);
+    const errorType = Math.floor(Math.random() * 3);  
+    switch (errorType) {
+      case 0: 
+        return data.slice(0, randomIndex) + data.slice(randomIndex + 1);
+      case 1: 
+        const randomChar = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+        return data.slice(0, randomIndex) + randomChar + data.slice(randomIndex);
+      case 2: 
+        if (randomIndex < data.length - 1) {
+          return (
+            data.slice(0, randomIndex) +
+            data[randomIndex + 1] +
+            data[randomIndex] +
+            data.slice(randomIndex + 2)
+          );
+        }
+        return data; 
+      default:
+        return data;
+    }
   };
 
   const getName = () => {
     switch (region) {
       case 'Poland':
-        return faker.name.fullName();  // Polish names
+        return faker.name.fullName(); 
       case 'USA':
-        return faker.name.fullName();  // American names
+        return faker.name.fullName(); 
       case 'Georgia':
-        return faker.name.fullName();  // Georgian names (simulated)
+        return faker.name.fullName(); 
       case 'Bangladesh':
-        return faker.name.fullName();  // Bangladesh names (simulated)
+        return faker.name.fullName();  
       default:
-        return faker.name.fullName();  // Fallback for any region
+        return faker.name.fullName(); 
     }
   };
-  
 
   const getAddress = () => {
     switch (region) {
       case 'Poland':
-        return `${faker.address.city()}, ${faker.address.street()} ${faker.address.buildingNumber()}`;
+        return `${faker.address.city()}, ${faker.address.streetAddress()}`;
       case 'USA':
-        return `${faker.address.city()}, ${faker.address.street()} ${faker.address.buildingNumber()}`;
+        return `${faker.address.city()}, ${faker.address.streetAddress()}`;
       case 'Georgia':
-        return `${faker.address.city()}, ${faker.address.street()} ${faker.address.buildingNumber()}`;  // Simulating Georgian addresses
+        return `${faker.address.city()}, ${faker.address.streetAddress()}`; 
       case 'Bangladesh':
-        return `${faker.address.city()}, ${faker.address.street()} ${faker.address.buildingNumber()}`;  // Simulating Georgian addresses
+        return `${faker.address.city()}, ${faker.address.streetAddress()}`; 
       default:
-        return `${faker.address.city()}, ${faker.address.street()} ${faker.address.buildingNumber()}`;
+        return `${faker.address.city()}, ${faker.address.streetAddress()}`;
     }
   };
-  
 
   const getPhone = () => {
     switch (region) {
       case 'Poland':
-        return faker.phone.number('+48 ### ### ###');  // Polish phone number format
+        return faker.phone.number('+48 ### ### ###');  
       case 'USA':
-        return faker.phone.number('+1 (###) ###-####');  // USA phone number format
+        return faker.phone.number('+1 (###) ###-####');
       case 'Georgia':
-        return faker.phone.number('+995 ### ### ###');  // Georgian phone number format
+        return faker.phone.number('+995 ### ### ###'); 
       case 'Bangladesh':
-        return faker.phone.number('+880 1705125468');  // Georgian phone number format
+        return faker.phone.number('+880 ### ### ####');
       default:
-        return faker.phone.number();  // Default phone number format
+        return faker.phone.number(); 
     }
   };
-  
 
   return (
     <div className="text-center font-sans font-medium text-black">
-      <h1 className='text-3xl py-6 font-mono font-bold'>Fake User Data Generator</h1>
+      <h1 className="text-3xl py-6 font-mono font-bold">Fake User Data Generator</h1>
 
-      {/* Region Selector */}
-      <label className='text-xl font-mono font-light text-black'>Region:</label>
-      <select className='border-2 py-2 px-2 rounded-md' value={region} onChange={(e) => setRegion(e.target.value)}>
+      <label className="text-xl font-mono font-light text-black">Region:</label>
+      <select className="border-2 py-2 px-2 rounded-md" value={region} onChange={(e) => setRegion(e.target.value)}>
         {regions.map((reg) => (
           <option key={reg} value={reg}>
             {reg}
@@ -125,10 +142,9 @@ function TableList() {
         ))}
       </select>
 
-      {/* Error Rate Slider */}
-      <label className='ml-6 text-xl font-mono font-light text-black'>Error Rate (per record): {errorRate}</label>
+      <label className="ml-6 text-xl font-mono font-light text-black">Error Rate (per record): {errorRate}</label>
       <input
-      className='mt-6'
+        className="mt-6"
         type="range"
         min="0"
         max="10"
@@ -143,37 +159,38 @@ function TableList() {
         onChange={(e) => setErrorRate(e.target.value)}
       />
 
-      {/* Seed Input */}
-      <label className='text-xl font-mono font-light text-black'>Seed:</label>
-      <input className='py-6' type="text" value={seed} onChange={(e) => setSeed(e.target.value)} />
+      <label className="text-xl font-mono font-light text-black">Seed:</label>
+      <input className="py-6" type="text" value={seed} onChange={(e) => setSeed(e.target.value)} />
       <button onClick={() => setSeed(Math.floor(Math.random() * 10000))}>Random Seed</button>
 
-      {/* Data Table */}
-      <table className='border w-full border-collapse mt-5'>
+      <table className="border w-full border-collapse mt-5">
         <thead>
           <tr>
-            <th className='border p-3 text-start'>#</th>
-            <th className='border p-3 text-start'>Name</th>
-            <th className='border p-3 text-start'>Address</th>
-            <th className='border p-3 text-start'>Phone</th>
+            <th className="border p-3 text-start">#</th>
+            <th className="border p-3 text-start">Name</th>
+            <th className="border p-3 text-start">Address</th>
+            <th className="border p-3 text-start">Phone</th>
           </tr>
         </thead>
         <tbody>
           {records.map((record) => (
             <tr key={record.index}>
-              <td className='border text-start p-3'>{record.index}</td>
-              <td className='border text-start p-3'>{record.name}</td>
-              <td className='border text-start p-3'>{record.address}</td>
-              <td className='border text-start p-3'>{record.phone}</td>
+              <td className="border text-start p-3">{record.index}</td>
+              <td className="border text-start p-3">{record.name}</td>
+              <td className="border text-start p-3">{record.address}</td>
+              <td className="border text-start p-3">{record.phone}</td>
             </tr>
           ))}
         </tbody>
       </table>
 
-      {/* Infinite Scroll */}
       <div onScroll={handleScroll}></div>
+
+      <CSVLink data={records} filename={`data-page-${page}.csv`}>
+        <button className="mt-4 p-2 bg-blue-500 text-white rounded">Export to CSV</button>
+      </CSVLink>
     </div>
   );
 }
 
-export default TableList;
+export default TableList
